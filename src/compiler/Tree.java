@@ -14,58 +14,58 @@ import java.util.List;
  *
  * @author emanuellaude
  */
-public class Node {
+public class Tree {
 
-    private Node parent = null;
-    private List<Node> children;
-    private String token;
+    private Tree parent = null;
+    private List<Tree> children;
+    private Token token;
     private static int UNIQUE_ID = 0;
     private int id;
     
-    public Node(String token) {
+    public Tree(Token token) {
         this.token = token;
         this.children = new ArrayList<>();
         this.parent = null;
         this.id = UNIQUE_ID;
-        Node.UNIQUE_ID++;
+        Tree.UNIQUE_ID++;
     }
 
-    public Node(String token, Node... children) {
+    public Tree(Token token, Tree... children) {
         this(token);
         this.children = Arrays.asList(children);
     }
 
-    public String getToken() {
+    public Token getToken() {
         return token;
     }
 
-    public void setToken(String token) {
+    public void setToken(Token token) {
         this.token = token;
     }
 
-    public void setParent(Node parent) {
+    public void setParent(Tree parent) {
         this.parent = parent;
     }
 
-    public Node getParent() {
+    public Tree getParent() {
         return parent;
     }
 
-    public List<Node> getChildren() {
+    public List<Tree> getChildren() {
         return children;
     }
 
-    public void addChild(Node child) {
+    public void addChild(Tree child) {
         children.add(child);
     }
 
-    public Node getChild(int i) {
+    public Tree getChild(int i) {
         return children.get(i);
     }
 
     private void dotHelper(PrintStream out) throws IOException {
-        out.println(id + " [label = \"" + token + "\"]");
-        for (Node child : children) {
+        out.println(id + " [label = \"" + token.getValue() + "\"]");
+        for (Tree child : children) {
             out.println(id + " -> " + child.id);
             child.dotHelper(out);
         }
