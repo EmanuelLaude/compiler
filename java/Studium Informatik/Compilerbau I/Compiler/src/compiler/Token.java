@@ -10,7 +10,6 @@ package compiler;
  */
 public class Token {
     public enum Type {
-
         EOF, WHILE, IF, ELSE, TYPE, IDENTIFIER, 
         ASSIGNMENT, RELATION, AND, OR, NOT, PLUS_MINUS, MUL_DIV_MOD,
         DELIMITER, LITERAL

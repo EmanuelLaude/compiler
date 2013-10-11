@@ -19,9 +19,9 @@ public class Parser {
      */
     public static void main(String[] args) {
         //String expr = "(abc+123+_12hkhl78)==(2*(2*(3!=5<=23+!(-12))))";
-        String expr = " void arsch_losch(){;;} int  mainadsf ( int a , int  b , bool c )  {  int a,b; abc = (32+ -1)<=(-7) || +2== 2; while   ( true <=(12 %(a+b-c))*+a-b && asdf-y || +33 && -(a<b+1)%e ) { ; adsf = 12<=7 ; if(true) {} else {;} }  int a; bool ax; }   ";
+        String expr = "int main(int argc,int argv){bool b,c,d = a || !(c<=c) || -factorial(-12+3,false,a<=w&&c); b = true && false || true;}";
         Parser parser = new Parser(expr);
-        Node n = parser.parse();
+        Tree n = parser.parse();
         n.printDot("tree.dot");
     }
 
@@ -35,26 +35,39 @@ public class Parser {
         //TODO
     }
 
-    public Node parse() {
+    public Tree parse() {
         try {
-            Node root = parseProgram();
+            Tree root = parseProgram();
             finish();
             return root;
         } catch (ParseException e) {
-            System.out.println("Parse error: " + e.getMessage());
-            System.out.println(lexer.getInput());
-            for (int i = 0; i < e.getErrorOffset(); i++) {
-                System.out.print(' ');
+            System.out.println("Parse error: " + e.getMessage()+"\n\n");
+            String[] lines = lexer.getInput().split("\n");
+            int pos = 0;
+            int i = 0;
+            for (; i < lines.length; i++) {
+                System.out.println((i+1)+": "+ lines[i]);
+                if (e.getErrorOffset() <= pos + lines[i].length() && e.getErrorOffset() >= pos) {
+                    for (int j = 0; j < e.getErrorOffset() - pos+3+(Math.floor(Math.log10(i+1))); j++) {
+                        System.out.print('-');
+
+                    }
+                    System.out.println('^');
+                }
+
+                pos += (lines[i].length() + 1);
             }
-            System.out.println('^');
-            e.printStackTrace();
-            return null;
+
+
+            //e.printStackTrace();
+
         }
+        return new Tree(new Token(Token.Type.EOF, "EOF"));
     }
 
     //program ::= function*
-    private Node parseProgram() throws ParseException {
-        Node program = new Node("EOF");
+    private Tree parseProgram() throws ParseException {
+        Tree program = new Tree(new Token(Token.Type.EOF, "EOF"));
         while (lexer.getNextToken().getType() != Token.Type.EOF) {
             program.addChild(parseFunction());
         }
@@ -62,29 +75,29 @@ public class Parser {
     }
 
     //function ::= INT|BOOL|VOID ID(parameters) { functionDefinition }
-    private Node parseFunction() throws ParseException {
+    private Tree parseFunction() throws ParseException {
         Token token = lexer.getNextToken();
-        Node type;
+        Tree type;
         if (token.getType() == Token.Type.TYPE) {
             lexer.matchToken(token);
-            type = new Node(token.getValue());
+            type = new Tree(token);
         } else {
-            throw new ParseException("Unexpected token '" + token.getValue() + "'", lexer.getPosition());
+            throw new ParseException("Unexpected token '" + token.getValue() + "' at line " + (lexer.getLine()+1)+". Expected '"+ Token.Type.TYPE +"'.", lexer.getPosition());
         }
 
         token = lexer.getNextToken();
         if (token.getType() == Token.Type.IDENTIFIER) {
             lexer.matchToken(token);
-            Node id = new Node(token.getValue());
+            Tree id = new Tree(token);
 
             lexer.matchToken("(");
 
-            Node parameters = parseParameters();
+            Tree parameters = parseParameters();
 
             lexer.matchToken(")");
             lexer.matchToken("{");
 
-            Node definition = parseFunctionDefinition();
+            Tree definition = parseFunctionDefinition();
 
             lexer.matchToken("}");
 
@@ -93,32 +106,32 @@ public class Parser {
             id.addChild(definition);
             return id;
         } else {
-            throw new ParseException("Unexpected token '" + token.getValue() + "'", lexer.getPosition());
+            throw new ParseException("Unexpected token '" + token.getValue() + "' at line " + (lexer.getLine()+1)+". Expected '"+Token.Type.IDENTIFIER.name()+"'.", lexer.getPosition());
         }
 
     }
 
     //parameters ::= ((INT|BOOL) ID (, (INT|BOOL) ID)*)?
-    private Node parseParameters() throws ParseException {
-        Node parameters = new Node("(");
+    private Tree parseParameters() throws ParseException {
+        Tree parameters = new Tree(new Token(Token.Type.DELIMITER, "("));
 
         if (!lexer.getNextToken().getValue().equals(")")) {
-            Node type;
+            Tree type;
             Token token = lexer.getNextToken();
             if (token.getType() == Token.Type.TYPE) {
                 lexer.matchToken(token);
-                type = new Node(token.getValue());
+                type = new Tree(token);
             } else {
-                throw new ParseException("Unexpected token '" + token.getValue() + "'", lexer.getPosition());
+                throw new ParseException("Unexpected token '" + token.getValue() + "' at line " + (lexer.getLine()+1), lexer.getPosition());
             }
 
             token = lexer.getNextToken();
             if (token.getType() != Token.Type.IDENTIFIER) {
-                throw new ParseException("Unexpected token '" + token.getValue() + "'", lexer.getPosition());
+                throw new ParseException("Unexpected token '" + token.getValue() + "' at line " + (lexer.getLine()+1), lexer.getPosition());
             }
             lexer.matchToken(token);
 
-            type.addChild(new Node(token.getValue()));
+            type.addChild(new Tree(token));
             parameters.addChild(type);
 
             while (lexer.getNextToken().getValue().equals(",")) {
@@ -128,18 +141,18 @@ public class Parser {
 
                 if (token.getType() == Token.Type.TYPE) {
                     lexer.matchToken(token);
-                    type = new Node(token.getValue());
+                    type = new Tree(token);
                 } else {
-                    throw new ParseException("Unexpected token '" + token.getValue() + "'", lexer.getPosition());
+                    throw new ParseException("Unexpected token '" + token.getValue() + "' at line " + (lexer.getLine()+1), lexer.getPosition());
                 }
 
                 token = lexer.getNextToken();
                 if (token.getType() != Token.Type.IDENTIFIER) {
-                    throw new ParseException("Unexpected token '" + token.getValue() + "'", lexer.getPosition());
+                    throw new ParseException("Unexpected token '" + token.getValue() + "' at line " + (lexer.getLine()+1), lexer.getPosition());
                 }
                 lexer.matchToken(token);
 
-                type.addChild(new Node(token.getValue()));
+                type.addChild(new Tree(token));
                 parameters.addChild(type);
             }
         }
@@ -147,8 +160,8 @@ public class Parser {
     }
 
     // funtionDefinition ::= stmt*
-    private Node parseFunctionDefinition() throws ParseException {
-        Node definition = new Node("{");
+    private Tree parseFunctionDefinition() throws ParseException {
+        Tree definition = new Tree(new Token(Token.Type.DELIMITER, "{"));
 
         while (!lexer.getNextToken().getValue().equals("}")) {
             definition.addChild(parseStatement());
@@ -156,21 +169,21 @@ public class Parser {
         return definition;
     }
 
-    /* statement ::= (INT|BOOL) ID (, ID)*; |
+    /* statement ::= (INT|BOOL) ID (, ID)* (= expression)?; |
      *               WHILE (expression) statement |
      *               IF (expression) statement (ELSE statement)? |
      *               { statement* } |
      *               ;
      *               ID = expression;
      */
-    private Node parseStatement() throws ParseException {
+    private Tree parseStatement() throws ParseException {
         Token token = lexer.getNextToken();
-
+      
         switch (token.getType()) {
             case DELIMITER:
                 switch (token.getValue()) {
                     case "{":
-                        Node block = new Node("{");
+                        Tree block = new Tree(new Token(Token.Type.DELIMITER, "{"));
                         lexer.matchToken("{");
                         while (!lexer.getNextToken().getValue().equals("}")) {
                             block.addChild(parseStatement());
@@ -179,47 +192,56 @@ public class Parser {
                         return block;
                     case ";":
                         lexer.matchToken(";");
-                        return new Node(";");
+                        return new Tree(new Token(Token.Type.DELIMITER, ";"));
                 }
             case IF:
                 lexer.matchToken(token);
                 lexer.matchToken("(");
-                Node expression = parseExpression();
+                Tree expression = parseExpression();
                 lexer.matchToken(")");
-                Node then = parseStatement();
+                Tree then = parseStatement();
                 token = lexer.getNextToken();
                 if (token.getType() == Token.Type.ELSE) {
                     lexer.matchToken(token);
-                    return new Node("if", expression, then, parseStatement());
+                    return new Tree(new Token(Token.Type.IF, "if"), expression, then, parseStatement());
                 }
-                return new Node("if", expression, then);
+                return new Tree(new Token(Token.Type.IF, "if"), expression, then);
             case WHILE:
                 lexer.matchToken(token);
                 lexer.matchToken("(");
                 expression = parseExpression();
                 lexer.matchToken(")");
-                return new Node(token.getValue(), expression, parseStatement());
+                return new Tree(token, expression, parseStatement());
             case TYPE:
                 lexer.matchToken(token);
-                Node type = new Node(token.getValue());
+                Tree type = new Tree(token);
+                
                 token = lexer.getNextToken();
                 if (token.getType() != Token.Type.IDENTIFIER) {
-                    throw new ParseException("Unexpected token '" + token.getValue() + "'", lexer.getPosition());
+                    throw new ParseException("Unexpected token '" + token.getValue() + "' at line " + (lexer.getLine()+1), lexer.getPosition());
                 }
                 lexer.matchToken(token);
 
-                type.addChild(new Node(token.getValue()));
+                type.addChild(new Tree(token));
 
                 while (lexer.getNextToken().getValue().equals(",")) {
                     lexer.matchToken(",");
                     token = lexer.getNextToken();
                     if (token.getType() != Token.Type.IDENTIFIER) {
-                        throw new ParseException("Unexpected token '" + token.getValue() + "'", lexer.getPosition());
+                        throw new ParseException("Unexpected token '" + token.getValue() + "' at line " + (lexer.getLine()+1), lexer.getPosition());
                     }
                     lexer.matchToken(token);
 
-                    type.addChild(new Node(token.getValue()));
+                    type.addChild(new Tree(token));
                 }
+                
+                token = lexer.getNextToken();
+                if(token.getType() == Token.Type.ASSIGNMENT) {
+                    lexer.matchToken(token);
+                    expression = parseExpression();
+                    type.addChild(new Tree(token, expression));
+                }
+                
                 lexer.matchToken(";");
                 return type;
             case IDENTIFIER:
@@ -227,122 +249,138 @@ public class Parser {
                 lexer.matchToken("=");
                 expression = parseExpression();
                 lexer.matchToken(";");
-                return new Node("=", new Node(token.getValue()), expression);
+                return new Tree(new Token(Token.Type.ASSIGNMENT, "="), new Tree(token), expression);
             default:
-                throw new ParseException("Unexpected token '" + token.getValue() + "'", lexer.getPosition());
+                throw new ParseException("Unexpected token '" + token.getValue() + "' at line " + (lexer.getLine()+1), lexer.getPosition());
         }
     }
 
     //expr ::= term ((+|-) expr)?
-    private Node parseExpression() throws ParseException {
-        Node term = parseTerm();
-        
+    private Tree parseExpression() throws ParseException {
+        Tree term = parseTerm();
+
         Token token = lexer.getNextToken();
 
-        if(token.getType() == Token.Type.PLUS_MINUS) {
+        if (token.getType() == Token.Type.PLUS_MINUS) {
             lexer.matchToken(token);
-            return new Node(token.getValue(), term, parseExpression());
+            return new Tree(token, term, parseExpression());
         }
         return term;
     }
 
     //term :: binaryExpression ((*|/|%) term)?
-    private Node parseTerm() throws ParseException {
-        Node binaryExpression = parseBinaryExpression();
+    private Tree parseTerm() throws ParseException {
+        Tree binaryExpression = parseBinaryExpression();
 
         Token token = lexer.getNextToken();
-        
-        if(token.getType() == Token.Type.MUL_DIV_MOD) {
+
+        if (token.getType() == Token.Type.MUL_DIV_MOD) {
             lexer.matchToken(token);
-            return new Node(token.getValue(), binaryExpression, parseTerm());
+            return new Tree(token, binaryExpression, parseTerm());
         }
 
         return binaryExpression;
     }
 
     //binaryExpression ::= binaryTerm (|| binaryExpression)?
-    private Node parseBinaryExpression() throws ParseException {
-        Node term = parseBinaryTerm();
+    private Tree parseBinaryExpression() throws ParseException {
+        Tree term = parseBinaryTerm();
         Token token = lexer.getNextToken();
         if (token.getType() == Token.Type.OR) {
             lexer.matchToken(token);
-            return new Node(token.getValue(), term, parseBinaryExpression());
+            return new Tree(token, term, parseBinaryExpression());
         }
         return term;
     }
 
     //binaryTerm ::= relation (&& binaryTerm)?
-    private Node parseBinaryTerm() throws ParseException {
-        Node relation = parseRelation();
+    private Tree parseBinaryTerm() throws ParseException {
+        Tree relation = parseRelation();
         Token token = lexer.getNextToken();
         if (token.getType() == Token.Type.AND) {
             lexer.matchToken(token);
-            return new Node(token.getValue(), relation, parseBinaryTerm());
+            return new Tree(token, relation, parseBinaryTerm());
         }
 
         return relation;
     }
 
     //relation ::= binaryFactor ((<|<=|>|>=|==|!=|) relation)?
-    private Node parseRelation() throws ParseException {
-        Node factor = parseBinaryFactor();
+    private Tree parseRelation() throws ParseException {
+        Tree factor = parseBinaryFactor();
 
         Token token = lexer.getNextToken();
-        
-        if(token.getType() == Token.Type.RELATION) {
+
+        if (token.getType() == Token.Type.RELATION) {
             lexer.matchToken(token);
-            return new Node(token.getValue(), factor, parseRelation());
+            return new Tree(token, factor, parseRelation());
         }
 
         return factor;
     }
 
-    //binaryFactor ::= (+|-|!)? ID|BOOL|INT|(expression)
-    private Node parseBinaryFactor() throws ParseException {
-        
-        
+    //binaryFactor ::= (+|-|!)? ID|BOOL|INT|functionCall|(expression)
+    private Tree parseBinaryFactor() throws ParseException {
+
+
         Token token = lexer.getNextToken();
-        Node factor = null;
-        if(token.getType() == Token.Type.PLUS_MINUS || token.getType() == Token.Type.NOT) {
+        Tree factor = null;
+        if (token.getType() == Token.Type.PLUS_MINUS || token.getType() == Token.Type.NOT) {
             lexer.matchToken(token);
-            factor = new Node(token.getValue());
+            factor = new Tree(token);
             token = lexer.getNextToken();
         }
-        
-        
-        switch(token.getType()) {
+
+
+        switch (token.getType()) {
             case LITERAL:
                 lexer.matchToken(token);
-                Node literal = new Node(token.getValue());
-                if(factor == null) {
+                Tree literal = new Tree(token);
+                if (factor == null) {
                     return literal;
                 }
                 factor.addChild(literal);
                 return factor;
-                    
+
             case IDENTIFIER:
                 lexer.matchToken(token);
-                Node identifier = new Node(token.getValue());
-                if(factor == null) {
+                Tree identifier = new Tree(token);
+                token = lexer.getNextToken();
+                if(token.getValue().equals("(")) {
+                    lexer.matchToken(token);
+                     
+                    if(!lexer.getNextToken().getValue().equals(")")) {
+                        Tree args = new Tree(token);
+                        args.addChild(parseExpression());
+                        while(lexer.getNextToken().getValue().equals(",")) {
+                            lexer.matchToken(",");
+                            args.addChild(parseExpression());
+                        }
+                        identifier.addChild(args);
+                    }
+                    lexer.matchToken(")");
+                }
+                
+                if (factor == null) {
                     return identifier;
                 }
                 factor.addChild(identifier);
                 return factor;
-                
+
             case DELIMITER:
-                if(!token.getValue().equals("(")) {
-                    throw new ParseException("Unexpected token '" + token.getValue() + "'", lexer.getPosition());
+                if (!token.getValue().equals("(")) {
+                    throw new ParseException("Unexpected token '" + token.getValue() + "' at line " + (lexer.getLine()+1), lexer.getPosition());
                 }
                 lexer.matchToken("(");
-                Node expression = parseExpression();
+                Tree expression = parseExpression();
                 lexer.matchToken(")");
-                if(factor == null) {
+                if (factor == null) {
                     return expression;
                 }
                 factor.addChild(expression);
                 return factor;
             default:
-               throw new ParseException("Unexpected token '" + token.getValue() + "'", lexer.getPosition()); 
+                throw new ParseException("Unexpected token '" + token.getValue() + "' at line " + (lexer.getLine()+1), lexer.getPosition());
         }
     }
 }

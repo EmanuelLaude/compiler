@@ -16,6 +16,8 @@ import java.util.Map;
 public class Lexer {
     
     private int position = 0;
+    private int linePosition = 0;
+    private int line = 0;
     private String input;
     
     private static final String LETTERS = "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -45,6 +47,16 @@ public class Lexer {
     public int getPosition() {
         return position;
     }
+
+    public int getLinePosition() {
+        return linePosition;
+    }
+
+    public int getLine() {
+        return line;
+    }
+    
+    
     
     private boolean isDigit(char lookahead) {
         for (int i = 0; i < DIGITS.length(); i++) {
@@ -64,20 +76,20 @@ public class Lexer {
         return false;
     }
 
-    private String getNumber() {
+    private String getInteger() {
         int p = this.position;
         if (p < input.length()) {
             char y;
-            String number = "";
+            String str = "";
             while (isDigit(y = input.charAt(p))) {
-                number += y;
+                str += y;
                 p++;
                 if (p >= input.length()) {
                     break;
                 }
                 y = input.charAt(p);
             }
-            return number;
+            return str;
 
         } else {
             return "" + Token.EOF;
@@ -123,7 +135,7 @@ public class Lexer {
                 if (y == value.charAt(i)) {
                     position++;
                 } else {
-                    throw new ParseException("Unexpected character '" + y + "'.", position);
+                    throw new ParseException("Unexpected character '" + y + "' at line "+(line+1)+". Expected '" + value.charAt(i) + "'.", position);
                 }
             }
             
@@ -145,7 +157,7 @@ public class Lexer {
                 Token.Type type = RESERVED_KEYWORDS.get(value);
                 return new Token(type == null ? Token.Type.IDENTIFIER : type, value);
             } else if (isDigit(peek(1))) {
-                return new Token(Token.Type.LITERAL, getNumber());
+                return new Token(Token.Type.LITERAL, getInteger());
             }
             
             switch (peek(1)) {
@@ -173,11 +185,11 @@ public class Lexer {
                     }
                 case '&':
                     if(peek(2) != '&')
-                        throw new ParseException("Unexpected character '" + peek(2) + "'.", position+1);
+                        throw new ParseException("Unexpected character '" + peek(2) + "' at line "+(line+1)+". Expected '&'.", position+1);
                     return new Token(Token.Type.AND, "&&");
                 case '|':
                     if(peek(2) != '|')
-                        throw new ParseException("Unexpected character '" + peek(2) + "'.", position+1);
+                        throw new ParseException("Unexpected character '" + peek(2) + "' at line "+(line+1)+". Expected '|'.", position+1);
                     return new Token(Token.Type.OR, "||");
                 case '<':
                     if (peek(2) == '=') {
@@ -207,7 +219,7 @@ public class Lexer {
                 case '$':
                     return new Token(Token.Type.EOF, "$");
                 default:
-                    throw new ParseException("Unexpected character '" + peek(1) + "'.", position);
+                    throw new ParseException("Unexpected character '" + peek(1) + "' at line "+(line+1), position);
                     
             }
         }
@@ -218,6 +230,10 @@ public class Lexer {
         if (position < input.length()) {
             for (;;) {
                 char y = input.charAt(position);
+                if(y == '\n') {
+                    line++;
+                    linePosition = 0;
+                }
                 if (y != ' ' && y != '\t' && y != '\n') {
                     return;
                 }
