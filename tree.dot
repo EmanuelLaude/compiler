@@ -1,0 +1,83 @@
+digraph AST {
+0 [label = "EOF"]
+0 -> 2
+2 [label = "main"]
+2 -> 1
+1 [label = "int"]
+2 -> 3
+3 [label = "("]
+3 -> 4
+4 [label = "int"]
+4 -> 5
+5 [label = "argc"]
+3 -> 6
+6 [label = "int"]
+6 -> 7
+7 [label = "argv"]
+2 -> 8
+8 [label = "{"]
+8 -> 9
+9 [label = "bool"]
+9 -> 10
+10 [label = "b"]
+9 -> 11
+11 [label = "c"]
+9 -> 12
+12 [label = "d"]
+9 -> 33
+33 [label = "="]
+33 -> 32
+32 [label = "||"]
+32 -> 13
+13 [label = "a"]
+32 -> 31
+31 [label = "||"]
+31 -> 14
+14 [label = "!"]
+14 -> 17
+17 [label = "<="]
+17 -> 15
+15 [label = "c"]
+17 -> 16
+16 [label = "c"]
+31 -> 18
+18 [label = "-"]
+18 -> 19
+19 [label = "factorial"]
+19 -> 20
+20 [label = "("]
+20 -> 24
+24 [label = "+"]
+24 -> 21
+21 [label = "-"]
+21 -> 22
+22 [label = "12"]
+24 -> 23
+23 [label = "3"]
+20 -> 25
+25 [label = "false"]
+20 -> 30
+30 [label = "&&"]
+30 -> 28
+28 [label = "<="]
+28 -> 26
+26 [label = "a"]
+28 -> 27
+27 [label = "w"]
+30 -> 29
+29 [label = "c"]
+8 -> 40
+40 [label = "="]
+40 -> 39
+39 [label = "b"]
+40 -> 38
+38 [label = "||"]
+38 -> 36
+36 [label = "&&"]
+36 -> 34
+34 [label = "true"]
+36 -> 35
+35 [label = "false"]
+38 -> 37
+37 [label = "true"]
+}
